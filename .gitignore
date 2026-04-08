@@ -1,3 +1,4 @@
+
 # Firebase Secrets
 serviceAccountKey.json
 *.json
@@ -8,3 +9,4 @@ serviceAccountKey.json
 # Python Cache
 __pycache__/
 *.pyc
+.venv
