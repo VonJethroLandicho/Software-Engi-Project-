@@ -1,0 +1,10 @@
+# Firebase Secrets
+serviceAccountKey.json
+*.json
+
+# Environment Variables
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
