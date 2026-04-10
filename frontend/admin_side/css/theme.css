@@ -1,0 +1,34 @@
+:root {
+    --black: #1a1a1a;
+    --red: #a30000;
+    --white: #ffffff;
+    --bg-gray: #f4f4f4;
+    --text-dark: #333;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+body { background-color: var(--bg-gray); color: var(--text-dark); }
+
+.top-bar {
+    background-color: var(--black);
+    color: var(--white);
+    padding: 15px;
+    text-align: center;
+    border-bottom: 5px solid var(--red);
+}
+
+.top-bar h1 { letter-spacing: 3px; font-weight: 800; margin-bottom: 5px; font-size: 2em; }
+.top-bar .ph { color: var(--red); }
+.top-bar p { font-size: 1em; opacity: 0.8; }
+
+/* Global buttons with better grouping */
+.btn {
+    padding: 10px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; transition: 0.2s; width: 100%;
+    font-size: 0.9em;
+}
+.btn-dark { background: var(--black); color: var(--white); }
+.btn-dark:hover { background: #333; }
+.btn-red { background: var(--red); color: var(--white); }
+.btn-red:hover { background: #800000; }
+.btn-outline { background: transparent; border: 1px solid var(--black); color: var(--black); }

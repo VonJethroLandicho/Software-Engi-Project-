@@ -1,0 +1,55 @@
+.dashboard-container { max-width: 1400px; margin: 0 auto; padding: 30px 20px; }
+
+/* The main 3-barber grid */
+.seat-grid { display: flex; justify-content: space-between; gap: 15px; flex-wrap: nowrap; }
+
+.seat-card {
+    background: var(--white); padding: 20px; border-radius: 8px; width: 32%; flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; border-top: 5px solid #ccc;
+    display: flex; flex-direction: column; justify-content: space-between;
+}
+
+.card-header { margin-bottom: 10px; }
+.seat-card h2 { margin-bottom: 5px; font-size: 1.4em;}
+.status-indicator { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; margin-bottom: 10px; }
+
+/* Active Seat Display */
+.active-seat-zone {
+    margin: 10px 0; padding: 15px 5px; border: 2px dashed #ccc; border-radius: 6px;
+    background: #fdfdfd; transition: 0.3s; color: #888; font-weight: bold;
+    font-size: 0.85em; text-align: center;
+}
+.active-seat-zone.cutting { border: 2px solid var(--red); background: #ffebee; color: var(--red); }
+
+/* Waiting Line section */
+.queue-row {
+    flex-wrap: wrap; justify-content: flex-start; padding: 5px; min-height: 40px; 
+    background: #fafafa; border-radius: 4px; gap: 4px; overflow-y: auto; max-height: 80px; margin-bottom: 10px;
+}
+.name-chip {
+    background: var(--black); color: white; padding: 3px 8px; border-radius: 12px; 
+    font-size: 0.8em; display: inline-flex; align-items: center; gap: 4px; margin: 2px;
+}
+
+/* Status Colors */
+.status-available { border-top-color: #00695c; }
+.status-available .status-indicator { background: #e0f2f1; color: #00695c; }
+.status-cutting { border-top-color: var(--red); }
+.status-cutting .status-indicator { background: #ffebee; color: var(--red); }
+.status-offline { border-top-color: #757575; }
+.status-offline .status-indicator { background: #eee; color: #757575; }
+
+/* Modal (Pop-up) Styles for Booking */
+.modal-hidden { display: none; }
+.modal-active { 
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+    background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000;
+}
+.modal-content { 
+    background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-top: 5px solid var(--red);
+}
+.schedule-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; text-align: left;}
+.form-group { margin-bottom: 15px; text-align: left; }
+.form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9em;}
+.form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
