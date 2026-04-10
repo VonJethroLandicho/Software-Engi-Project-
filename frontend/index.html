@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mugshot PH — Staff Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;600&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="page-wrapper">
+
+    <!-- Left branding panel -->
+    <div class="brand-panel">
+      <div class="pole-accent"></div>
+      <div class="logo-area">
+        <div class="logo-icon">✂️</div>
+        <div class="brand-name">MUGSHOT<span>PH</span></div>
+        <span class="brand-super">Barbershop</span>
+        <div class="divider-stars"><span>★ ★ ★</span></div>
+        <p class="brand-tagline">Premium cuts.<br>Classic style.<br>Bacoor's finest since day one.</p>
+      </div>
+      <div class="brand-footer">
+        <ul class="services-list">
+          <li>Haircut & Styling</li>
+          <li>Hot Towel Shave</li>
+          <li>Beard Grooming</li>
+          <li>Kids Cut</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="form-panel">
+      <div class="form-header">
+        <div class="form-eyebrow">Staff Portal</div>
+        <div class="form-title">Welcome Back</div>
+        <p class="form-subtitle">Don't have an account? <a href="#">Sign up</a></p>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Email Address</label>
+        <div class="field-input-wrap">
+          <input class="field-input" type="email" placeholder="superadmin@mugshotph.com" />
+          <span class="field-icon">✉</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <div class="field-input-wrap">
+          <input class="field-input" type="password" placeholder="••••••••" id="pwdInput" />
+          <span class="field-icon" id="eyeBtn" onclick="togglePwd()">👁</span>
+        </div>
+      </div>
+
+      <div class="form-options">
+        <label class="remember-label" onclick="toggleCheck()">
+          <div class="custom-checkbox checked" id="checkbox"></div>
+          Remember me
+        </label>
+        <a href="#" class="forgot-link">Forgot Password?</a>
+      </div>
+
+      <button class="btn-signin" onclick="handleSignIn()">Sign In</button>
+
+      <div class="or-divider"><span>Or continue with</span></div>
+
+      <button class="btn-google">
+        <span class="google-g">G</span>
+        Continue with Google
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    async function handleSignIn() {
+  const emailInput = document.querySelector('input[type="email"]');
+  const passwordInput = document.getElementById('pwdInput');
+  const btn = document.querySelector('.btn-signin');
+
+  // Input Validation
+  if (!emailInput.value || !passwordInput.value) {
+    alert("Please enter both email and password.");
+    return;
+  }
+
+  // UI Feedback: Start Loading
+  btn.textContent = 'Signing In...';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+
+  try {
+    const response = await fetch('http://127.0.0.1:8000/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: emailInput.value,
+        password: passwordInput.value
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // 1. Store the Firebase ID Token locally
+      localStorage.setItem('id_token', data.id_token);
+      
+      // 2. Visual Success Feedback
+      btn.textContent = '✓ Success';
+      btn.style.background = '#1a6b3a';
+      
+      // 3. Redirect to Dashboard
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 1000);
+    } else {
+      // Handle backend errors (e.g., "INVALID_PASSWORD")
+      alert('Login Error: ' + (data.detail || 'Access Denied'));
+      resetButton(btn);
+    }
+  } catch (error) {
+    console.error('Connection Error:', error);
+    alert('Could not connect to the backend. Is uvicorn running?');
+    resetButton(btn);
+  }
+}
+
+function resetButton(btn) {
+  btn.textContent = 'Sign In';
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.background = '';
+}
+  </script>
+
+</body>
+</html>
