@@ -4,31 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mugshot Barbershop - Admin</title>
-    <link rel="stylesheet" href="css/theme.css">
-    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="/admin_side/css/theme.css">
+    <link rel="stylesheet" href="/admin_side/css/layout.css">
 </head>
 <body>
+
+    <!-- ── AUTH GUARD — runs before anything else ──────────────────────────── -->
+    <script>
+      (async () => {
+        const token = localStorage.getItem("id_token");
+
+        // No token → send to login
+        if (!token) {
+          window.location.href = '/';
+          return;
+        }
+
+        try {
+          const res = await fetch("http://127.0.0.1:5000/auth/me", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+
+          if (!res.ok) throw new Error("Session invalid");
+
+          const user = await res.json();
+
+          // Show logged-in email once DOM is ready
+          document.addEventListener("DOMContentLoaded", () => {
+            const emailEl = document.getElementById("admin-email");
+            if (emailEl) emailEl.textContent = user.email;
+          });
+
+        } catch {
+          localStorage.removeItem("id_token");
+          window.location.href = '/';
+        }
+      })();
+
+      async function logout() {
+        const token = localStorage.getItem("id_token");
+        if (token) {
+          // Tell Flask to revoke all sessions server-side
+          await fetch("http://127.0.0.1:5000/auth/logout", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+          }).catch(() => {});
+        }
+        localStorage.removeItem("id_token");
+        window.location.href = '/';
+      }
+    </script>
+
     <header class="top-bar">
         <h1>MUGSHOT <span class="ph">PH</span></h1>
-        <p>Barbershop Admin Control Center</p>
+        <p>Barbershop Admin Control Center — <span id="admin-email"></span></p>
+        <button onclick="logout()" style="float:right; cursor:pointer; padding: .4rem .9rem; margin-top: .5rem;">
+          Logout
+        </button>
     </header>
 
     <main class="dashboard-container">
         <section class="module-section">
-            <div class="seat-grid" id="seat-grid">
-                </div>
+            <div class="seat-grid" id="seat-grid"></div>
         </section>
 
         <section class="module-section">
             <h2 class="section-title">Appointment Requests</h2>
-            <div class="appointment-list" id="appointment-list">
-                </div>
+            <div class="appointment-list" id="appointment-list"></div>
         </section>
     </main>
 
-    <script src="js/modules/seat_ui.js"></script>
-    <script src="js/modules/queue_ui.js"></script>
-    <script src="js/modules/booking_ui.js"></script>
-    <script src="js/main.js"></script>
+    <script src="/admin_side/js/modules/seat_ui.js"></script>
+    <script src="/admin_side/js/modules/queue_ui.js"></script>
+    <script src="/admin_side/js/modules/booking_ui.js"></script>
+    <script src="/admin_side/js/main.js"></script>
 </body>
 </html>

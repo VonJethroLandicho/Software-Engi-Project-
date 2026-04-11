@@ -77,65 +77,75 @@
 
   <script>
     async function handleSignIn() {
-  const emailInput = document.querySelector('input[type="email"]');
-  const passwordInput = document.getElementById('pwdInput');
-  const btn = document.querySelector('.btn-signin');
+      const emailInput = document.querySelector('input[type="email"]');
+      const passwordInput = document.getElementById('pwdInput');
+      const btn = document.querySelector('.btn-signin');
 
-  // Input Validation
-  if (!emailInput.value || !passwordInput.value) {
-    alert("Please enter both email and password.");
-    return;
-  }
+      // Input Validation
+      if (!emailInput.value || !passwordInput.value) {
+        alert("Please enter both email and password.");
+        return;
+      }
 
-  // UI Feedback: Start Loading
-  btn.textContent = 'Signing In...';
-  btn.disabled = true;
-  btn.style.opacity = '0.7';
+      // UI Feedback: Start Loading
+      btn.textContent = 'Signing In...';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
 
-  try {
-    const response = await fetch('http://127.0.0.1:8000/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: emailInput.value,
-        password: passwordInput.value
-      })
-    });
+      try {
+        const response = await fetch('http://127.0.0.1:5000/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: emailInput.value,
+            password: passwordInput.value
+          })
+        });
 
-    const data = await response.json();
+        const data = await response.json();
 
-    if (response.ok) {
-      // 1. Store the Firebase ID Token locally
-      localStorage.setItem('id_token', data.id_token);
-      
-      // 2. Visual Success Feedback
-      btn.textContent = '✓ Success';
-      btn.style.background = '#1a6b3a';
-      
-      // 3. Redirect to Dashboard
-      setTimeout(() => {
-        window.location.href = 'dashboard.html';
-      }, 1000);
-    } else {
-      // Handle backend errors (e.g., "INVALID_PASSWORD")
-      alert('Login Error: ' + (data.detail || 'Access Denied'));
-      resetButton(btn);
+        if (response.ok) {
+          // 1. Store the Firebase ID Token locally
+          localStorage.setItem('id_token', data.id_token);
+
+          // 2. Visual Success Feedback
+          btn.textContent = '✓ Success';
+          btn.style.background = '#1a6b3a';
+
+          // 3. Redirect to Admin Dashboard
+          setTimeout(() => {
+            window.location.href = '/admin';
+          }, 1000);
+        } else {
+          // Handle backend errors (e.g., "INVALID_PASSWORD")
+          alert('Login Error: ' + (data.detail || 'Access Denied'));
+          resetButton(btn);
+        }
+      } catch (error) {
+        console.error('Connection Error:', error);
+        alert('Could not connect to the backend. Is Flask running?');
+        resetButton(btn);
+      }
     }
-  } catch (error) {
-    console.error('Connection Error:', error);
-    alert('Could not connect to the backend. Is uvicorn running?');
-    resetButton(btn);
-  }
-}
 
-function resetButton(btn) {
-  btn.textContent = 'Sign In';
-  btn.disabled = false;
-  btn.style.opacity = '1';
-  btn.style.background = '';
-}
+    function resetButton(btn) {
+      btn.textContent = 'Sign In';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.background = '';
+    }
+
+    function togglePwd() {
+      const pwd = document.getElementById('pwdInput');
+      pwd.type = pwd.type === 'password' ? 'text' : 'password';
+    }
+
+    function toggleCheck() {
+      const cb = document.getElementById('checkbox');
+      cb.classList.toggle('checked');
+    }
   </script>
 
 </body>
