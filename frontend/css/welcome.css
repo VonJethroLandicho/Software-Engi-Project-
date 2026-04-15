@@ -1,0 +1,231 @@
+/* ── welcome.css — Mugshot PH Welcome Page Styles ── */
+
+:root {
+  --black:      #0d0d0d;
+  --dark:       #141414;
+  --red:        #c0392b;
+  --red-bright: #e74c3c;
+  --white:      #f5f0e8;
+  --cream:      #e8dcc8;
+  --gold-light: #d4a017;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--black);
+  font-family: 'Oswald', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle diagonal texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 60px,
+    rgba(192, 57, 43, 0.025) 60px,
+    rgba(192, 57, 43, 0.025) 120px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Bottom star row */
+body::after {
+  content: '★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★';
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(192, 57, 43, 0.15);
+  font-size: 12px;
+  letter-spacing: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Main container ── */
+.container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 24px;
+  animation: fadeUp 0.6s ease-out;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Logo ── */
+.logo-wrap {
+  margin-bottom: 40px;
+}
+
+.logo-wrap img {
+  width: 200px;
+  height: auto;
+  mix-blend-mode: lighten;
+  filter: brightness(1.05) contrast(1.1);
+}
+
+/* ── Thin rule + tagline ── */
+.tagline-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.tagline-row::before,
+.tagline-row::after {
+  content: '';
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(192, 57, 43, 0.6));
+}
+
+.tagline-row::after {
+  background: linear-gradient(to left, transparent, rgba(192, 57, 43, 0.6));
+}
+
+.tagline {
+  font-family: 'Special Elite', cursive;
+  font-size: 13px;
+  color: rgba(245, 240, 232, 0.4);
+  letter-spacing: 3px;
+}
+
+.portal-label {
+  font-size: 10px;
+  letter-spacing: 6px;
+  color: rgba(245, 240, 232, 0.25);
+  text-transform: uppercase;
+  margin-bottom: 36px;
+}
+
+/* ── Portal cards ── */
+.cards {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.card {
+  width: 220px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: 2px solid rgba(192, 57, 43, 0.5);
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s, transform 0.2s;
+  position: relative;
+}
+
+.card:hover {
+  background: rgba(192, 57, 43, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  border-top-color: var(--red);
+  transform: translateY(-3px);
+}
+
+.card-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 5px;
+  color: var(--white);
+  margin-bottom: 10px;
+}
+
+.card-desc {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: rgba(245, 240, 232, 0.35);
+  line-height: 1.7;
+  font-weight: 300;
+  margin-bottom: 24px;
+}
+
+.card-btn {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--red);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: gap 0.2s, color 0.2s;
+}
+
+.card:hover .card-btn {
+  color: var(--red-bright);
+  gap: 10px;
+}
+
+.card-btn::after {
+  content: '→';
+  font-size: 12px;
+}
+
+/* Divider between cards */
+.card-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  align-self: stretch;
+}
+
+/* ── Footer services ── */
+.footer-services {
+  list-style: none;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.footer-services li {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: rgba(245, 240, 232, 0.2);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-services li::before {
+  content: '✦';
+  color: rgba(192, 57, 43, 0.4);
+  font-size: 6px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 520px) {
+  .card-divider { display: none; }
+  .cards { gap: 12px; }
+  .card { width: 100%; max-width: 300px; }
+}

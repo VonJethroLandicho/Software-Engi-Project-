@@ -15,18 +15,18 @@
     <div class="brand-panel">
       <div class="pole-accent"></div>
       <div class="logo-area">
-        <div class="logo-icon">✂️</div>
-        <div class="brand-name">MUGSHOT<span>PH</span></div>
-        <span class="brand-super">Barbershop</span>
+        <div class="logo-img-wrap">
+          <img src="img/mugshot_logo.png" alt="Mugshot PH" />
+        </div>
         <div class="divider-stars"><span>★ ★ ★</span></div>
-        <p class="brand-tagline">Premium cuts.<br>Classic style.<br>Bacoor's finest since day one.</p>
+        <p class="brand-tagline">Staff access only.<br>Manage the floor.<br>Keep the shop sharp.</p>
       </div>
       <div class="brand-footer">
         <ul class="services-list">
-          <li>Haircut & Styling</li>
-          <li>Hot Towel Shave</li>
-          <li>Beard Grooming</li>
-          <li>Kids Cut</li>
+          <li>Queue Management</li>
+          <li>Appointments</li>
+          <li>Barber Dashboard</li>
+          <li>Shop Analytics</li>
         </ul>
       </div>
     </div>
@@ -36,13 +36,13 @@
       <div class="form-header">
         <div class="form-eyebrow">Staff Portal</div>
         <div class="form-title">Welcome Back</div>
-        <p class="form-subtitle">Don't have an account? <a href="#">Sign up</a></p>
+        <p class="form-subtitle">Not staff? <a href="/welcome">Go back to portal select</a></p>
       </div>
 
       <div class="field-group">
         <label class="field-label">Email Address</label>
         <div class="field-input-wrap">
-          <input class="field-input" type="email" placeholder="superadmin@mugshotph.com" />
+          <input class="field-input" type="email" id="emailInput" placeholder="staff@mugshotph.com" />
           <span class="field-icon">✉</span>
         </div>
       </div>
@@ -51,7 +51,7 @@
         <label class="field-label">Password</label>
         <div class="field-input-wrap">
           <input class="field-input" type="password" placeholder="••••••••" id="pwdInput" />
-          <span class="field-icon" id="eyeBtn" onclick="togglePwd()">👁</span>
+          <span class="field-icon" onclick="togglePwd()">👁</span>
         </div>
       </div>
 
@@ -65,75 +65,49 @@
 
       <button class="btn-signin" onclick="handleSignIn()">Sign In</button>
 
-      <div class="or-divider"><span>Or continue with</span></div>
-
-      <button class="btn-google">
-        <span class="google-g">G</span>
-        Continue with Google
-      </button>
     </div>
 
   </div>
 
   <script>
     async function handleSignIn() {
-      const emailInput = document.querySelector('input[type="email"]');
-      const passwordInput = document.getElementById('pwdInput');
-      const btn = document.querySelector('.btn-signin');
+      const email    = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('pwdInput').value;
+      const btn      = document.querySelector('.btn-signin');
 
-      // Input Validation
-      if (!emailInput.value || !passwordInput.value) {
-        alert("Please enter both email and password.");
-        return;
-      }
+      if (!email || !password) { alert("Please enter both email and password."); return; }
 
-      // UI Feedback: Start Loading
-      btn.textContent = 'Signing In...';
-      btn.disabled = true;
+      btn.textContent   = 'Signing In...';
+      btn.disabled      = true;
       btn.style.opacity = '0.7';
 
       try {
-        const response = await fetch('http://127.0.0.1:5000/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: emailInput.value,
-            password: passwordInput.value
-          })
+        const response = await fetch('/auth/staff-login', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email, password })
         });
-
         const data = await response.json();
 
         if (response.ok) {
-          // 1. Store the Firebase ID Token locally
           localStorage.setItem('id_token', data.id_token);
-
-          // 2. Visual Success Feedback
-          btn.textContent = '✓ Success';
+          btn.textContent      = '✓ Access Granted';
           btn.style.background = '#1a6b3a';
-
-          // 3. Redirect to Admin Dashboard
-          setTimeout(() => {
-            window.location.href = '/admin';
-          }, 1000);
+          setTimeout(() => { window.location.href = '/admin'; }, 1000);
         } else {
-          // Handle backend errors (e.g., "INVALID_PASSWORD")
-          alert('Login Error: ' + (data.detail || 'Access Denied'));
+          alert(data.detail || 'Access Denied');
           resetButton(btn);
         }
-      } catch (error) {
-        console.error('Connection Error:', error);
-        alert('Could not connect to the backend. Is Flask running?');
+      } catch (err) {
+        alert('Could not connect to the server. Is Flask running?');
         resetButton(btn);
       }
     }
 
     function resetButton(btn) {
-      btn.textContent = 'Sign In';
-      btn.disabled = false;
-      btn.style.opacity = '1';
+      btn.textContent      = 'Sign In';
+      btn.disabled         = false;
+      btn.style.opacity    = '1';
       btn.style.background = '';
     }
 
@@ -143,9 +117,12 @@
     }
 
     function toggleCheck() {
-      const cb = document.getElementById('checkbox');
-      cb.classList.toggle('checked');
+      document.getElementById('checkbox').classList.toggle('checked');
     }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSignIn();
+    });
   </script>
 
 </body>

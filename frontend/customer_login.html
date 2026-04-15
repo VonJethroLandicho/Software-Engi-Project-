@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mugshot PH — Customer Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;600&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="page-wrapper">
+
+    <div class="brand-panel">
+      <div class="pole-accent"></div>
+      <div class="logo-area">
+        <div class="logo-img-wrap">
+          <img src="img/mugshot_logo.png" alt="Mugshot PH" />
+        </div>
+        <div class="divider-stars"><span>★ ★ ★</span></div>
+        <p class="brand-tagline">Book your seat.<br>Skip the wait.<br>Your fresh cut awaits.</p>
+      </div>
+      <div class="brand-footer">
+        <ul class="services-list">
+          <li>Haircut & Styling</li>
+          <li>Hot Towel Shave</li>
+          <li>Beard Grooming</li>
+          <li>Kids Cut</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="form-panel">
+      <div class="form-header">
+        <div class="form-eyebrow">Customer Portal</div>
+        <div class="form-title">Welcome In</div>
+        <p class="form-subtitle">New here? <a href="/customer-register">Create an account</a></p>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Email Address</label>
+        <div class="field-input-wrap">
+          <input class="field-input" type="email" id="emailInput" placeholder="you@email.com" />
+          <span class="field-icon">✉</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <div class="field-input-wrap">
+          <input class="field-input" type="password" placeholder="••••••••" id="pwdInput" />
+          <span class="field-icon" onclick="togglePwd()">👁</span>
+        </div>
+      </div>
+
+      <div class="form-options">
+        <label class="remember-label" onclick="toggleCheck()">
+          <div class="custom-checkbox checked" id="checkbox"></div>
+          Remember me
+        </label>
+        <a href="#" class="forgot-link">Forgot Password?</a>
+      </div>
+
+      <button class="btn-signin" onclick="handleSignIn()">Sign In</button>
+
+      <div class="or-divider"><span>Or continue with</span></div>
+
+      <button class="btn-google" id="googleBtn" onclick="handleGoogleSignIn()">
+        <span class="google-g">G</span>
+        Continue with Google
+      </button>
+
+      <a href="/welcome" class="back-link">← Back to Portal Select</a>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithRedirect,
+      getRedirectResult
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    // Config injected by Flask via render_html_with_firebase()
+    const app      = initializeApp(window.__FIREBASE_CONFIG__);
+    const auth     = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    // ── Handle Google redirect result on page load ──────────────────────────
+    try {
+      const result = await getRedirectResult(auth);
+      if (result && result.user) {
+        const idToken = await result.user.getIdToken();
+        localStorage.setItem('id_token', idToken);
+        window.location.href = '/customer';
+      }
+    } catch (err) {
+      if (err.code !== 'auth/no-current-user' && err.code !== 'auth/null-user') {
+        alert('Google Sign-In error: ' + err.message);
+      }
+    }
+
+    // ── Google Sign-In ──────────────────────────────────────────────────────
+    window.handleGoogleSignIn = async function () {
+      const btn = document.getElementById('googleBtn');
+      btn.disabled      = true;
+      btn.style.opacity = '0.6';
+      try {
+        await signInWithRedirect(auth, provider);
+        // page will redirect to Google — execution stops here
+      } catch (err) {
+        alert('Google Sign-In failed: ' + err.message);
+        btn.disabled      = false;
+        btn.style.opacity = '1';
+      }
+    };
+  </script>
+
+  <script>
+    // ── Email/Password Sign-In (no Firebase SDK needed — uses Flask endpoint) ──
+    async function handleSignIn() {
+      const email    = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('pwdInput').value;
+      const btn      = document.querySelector('.btn-signin');
+
+      if (!email || !password) { alert("Please enter both email and password."); return; }
+
+      btn.textContent   = 'Signing In...';
+      btn.disabled      = true;
+      btn.style.opacity = '0.7';
+
+      try {
+        const response = await fetch('/auth/login', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email, password })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          localStorage.setItem('id_token', data.id_token);
+          btn.textContent      = '✓ Success';
+          btn.style.background = '#1a6b3a';
+          setTimeout(() => { window.location.href = '/customer'; }, 900);
+        } else {
+          alert('Login Error: ' + (data.detail || 'Access Denied'));
+          resetButton(btn);
+        }
+      } catch (err) {
+        alert('Could not connect to the server. Is Flask running?');
+        resetButton(btn);
+      }
+    }
+
+    function resetButton(btn) {
+      btn.textContent      = 'Sign In';
+      btn.disabled         = false;
+      btn.style.opacity    = '1';
+      btn.style.background = '';
+    }
+    function togglePwd() {
+      const el = document.getElementById('pwdInput');
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+    function toggleCheck() {
+      document.getElementById('checkbox').classList.toggle('checked');
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleSignIn();
+    });
+  </script>
+
+</body>
+</html>

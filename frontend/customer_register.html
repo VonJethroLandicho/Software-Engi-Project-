@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mugshot PH — Create Account</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;600&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Password strength bar */
+    .strength-bar-wrap {
+      margin-top: 8px;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .strength-segments {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+    }
+    .strength-seg {
+      height: 3px;
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      transition: background 0.3s;
+    }
+    .strength-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: rgba(245,240,232,0.3);
+      min-width: 48px;
+      text-align: right;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-wrapper">
+
+    <!-- Left branding panel -->
+    <div class="brand-panel">
+      <div class="pole-accent"></div>
+      <div class="logo-area">
+        <div class="logo-img-wrap">
+          <img src="img/mugshot_logo.png" alt="Mugshot PH" />
+        </div>
+        <div class="divider-stars"><span>★ ★ ★</span></div>
+        <p class="brand-tagline">Join the regulars.<br>Book fast, cut sharp.<br>Bacoor's finest awaits.</p>
+      </div>
+      <div class="brand-footer">
+        <ul class="services-list">
+          <li>Haircut & Styling</li>
+          <li>Hot Towel Shave</li>
+          <li>Beard Grooming</li>
+          <li>Kids Cut</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="form-panel">
+      <div class="form-header">
+        <div class="form-eyebrow">Customer Portal</div>
+        <div class="form-title">Create Account</div>
+        <p class="form-subtitle">Already have one? <a href="/customer-login">Sign in</a></p>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Full Name</label>
+        <div class="field-input-wrap">
+          <input class="field-input" type="text" id="nameInput" placeholder="Juan dela Cruz" />
+          <span class="field-icon">✦</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Email Address</label>
+        <div class="field-input-wrap">
+          <input class="field-input" type="email" id="emailInput" placeholder="you@email.com" />
+          <span class="field-icon">✉</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <div class="field-input-wrap">
+          <input class="field-input" type="password" id="pwdInput" placeholder="••••••••" oninput="checkStrength(this.value)" />
+          <span class="field-icon" onclick="togglePwd('pwdInput')">👁</span>
+        </div>
+        <div class="strength-bar-wrap">
+          <div class="strength-segments">
+            <div class="strength-seg" id="seg1"></div>
+            <div class="strength-seg" id="seg2"></div>
+            <div class="strength-seg" id="seg3"></div>
+            <div class="strength-seg" id="seg4"></div>
+          </div>
+          <span class="strength-label" id="strengthLabel"></span>
+        </div>
+      </div>
+
+      <div class="field-group" style="margin-bottom: 28px;">
+        <label class="field-label">Confirm Password</label>
+        <div class="field-input-wrap">
+          <input class="field-input" type="password" id="confirmInput" placeholder="••••••••" />
+          <span class="field-icon" onclick="togglePwd('confirmInput')">👁</span>
+        </div>
+      </div>
+
+      <button class="btn-signin" onclick="handleRegister()">Create Account</button>
+
+      <div class="or-divider"><span>Or register with</span></div>
+
+      <button class="btn-google" onclick="handleGoogleSignIn()">
+        <span class="google-g">G</span>
+        Continue with Google
+      </button>
+
+      <a href="/customer-login" class="back-link">← Back to Sign In</a>
+    </div>
+
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      updateProfile,
+      GoogleAuthProvider,
+      signInWithRedirect,
+      getRedirectResult
+    }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = window.__FIREBASE_CONFIG__;
+
+    const app      = initializeApp(firebaseConfig);
+    const auth     = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    window.handleRegister = async function () {
+      const name     = document.getElementById('nameInput').value.trim();
+      const email    = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('pwdInput').value;
+      const confirm  = document.getElementById('confirmInput').value;
+      const btn      = document.querySelector('.btn-signin');
+
+      if (!name || !email || !password || !confirm) {
+        alert("Please fill in all fields."); return;
+      }
+      if (password !== confirm) {
+        alert("Passwords do not match."); return;
+      }
+      if (password.length < 6) {
+        alert("Password must be at least 6 characters."); return;
+      }
+
+      btn.textContent   = 'Creating Account...';
+      btn.disabled      = true;
+      btn.style.opacity = '0.7';
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: name });
+        const idToken = await userCredential.user.getIdToken();
+        localStorage.setItem('id_token', idToken);
+
+        btn.textContent      = '✓ Account Created';
+        btn.style.background = '#1a6b3a';
+        setTimeout(() => { window.location.href = '/customer-login'; }, 1000);
+      } catch (err) {
+        const msg = {
+          'auth/email-already-in-use': 'That email is already registered. Try signing in.',
+          'auth/invalid-email':        'Please enter a valid email address.',
+          'auth/weak-password':        'Password is too weak. Use at least 6 characters.',
+        }[err.code] || err.message;
+        alert('Registration Error: ' + msg);
+        btn.textContent      = 'Create Account';
+        btn.disabled         = false;
+        btn.style.opacity    = '1';
+        btn.style.background = '';
+      }
+    };
+
+    window.handleGoogleSignIn = async function () {
+      const btn = document.querySelector('.btn-google');
+      btn.disabled      = true;
+      btn.style.opacity = '0.7';
+      try {
+        await signInWithRedirect(auth, provider);
+      } catch (err) {
+        alert('Google Sign-In failed: ' + err.message);
+        btn.disabled      = false;
+        btn.style.opacity = '1';
+      }
+    };
+
+    // Handle Google redirect result when page loads
+    getRedirectResult(auth).then(async (result) => {
+      if (result && result.user) {
+        const idToken = await result.user.getIdToken();
+        localStorage.setItem('id_token', idToken);
+        window.location.href = '/customer';
+      }
+    }).catch((err) => {
+      if (err.code && err.code !== 'auth/no-current-user') {
+        console.error('Redirect error:', err.code, err.message);
+      }
+    });
+  </script>
+
+  <script>
+    function togglePwd(id) {
+      const el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    function checkStrength(val) {
+      const segs   = [1,2,3,4].map(i => document.getElementById('seg' + i));
+      const label  = document.getElementById('strengthLabel');
+      const colors = { 1: '#c0392b', 2: '#e67e22', 3: '#d4a017', 4: '#1a6b3a' };
+      const labels = { 1: 'Weak', 2: 'Fair', 3: 'Good', 4: 'Strong' };
+
+      let score = 0;
+      if (val.length >= 6)                          score++;
+      if (val.length >= 10)                         score++;
+      if (/[A-Z]/.test(val) && /[0-9]/.test(val))  score++;
+      if (/[^A-Za-z0-9]/.test(val))                score++;
+      score = Math.max(score, val.length > 0 ? 1 : 0);
+
+      segs.forEach((seg, i) => {
+        seg.style.background = i < score ? colors[score] : 'rgba(255,255,255,0.08)';
+      });
+      label.textContent      = val.length > 0 ? labels[score] : '';
+      label.style.color      = val.length > 0 ? colors[score] : 'rgba(245,240,232,0.3)';
+    }
+  </script>
+
+</body>
+</html>

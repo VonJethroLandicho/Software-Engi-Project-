@@ -1,8 +1,8 @@
 """
-firebase_auth_middleware.py — shared Firebase Auth helper for the Flask app.
+middleware.py — Firebase Auth helper for Flask.
 
-Initializes Firebase Admin SDK once and provides the @require_auth decorator
-to protect Flask routes using the same Firebase ID tokens issued by FastAPI.
+Initializes the Firebase Admin SDK once at startup and provides the
+@require_auth decorator to protect routes using Firebase ID tokens.
 """
 import os
 from functools import wraps
@@ -12,33 +12,31 @@ from firebase_admin import auth, credentials
 
 
 def init_firebase():
+    """Initialize Firebase Admin SDK (idempotent — safe to call multiple times)."""
     if not firebase_admin._apps:
-        # Build absolute path relative to this file's location
         base_dir = os.path.dirname(os.path.abspath(__file__))
         cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "serviceAccountKey.json")
-        
-        # If it's a relative path, resolve it from this file's directory
+
         if not os.path.isabs(cred_path):
             cred_path = os.path.join(base_dir, cred_path)
-        
+
         if not os.path.exists(cred_path):
             raise RuntimeError(f"serviceAccountKey.json not found at: {cred_path}")
-        
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
+
+        firebase_admin.initialize_app(credentials.Certificate(cred_path))
 
 
 def require_auth(f):
     """
-    Decorator to protect Flask routes with Firebase token verification.
+    Decorator to protect Flask routes with Firebase ID token verification.
+
+    The decoded token is injected as the first argument (current_user).
 
     Usage:
-        @dashboard_bp.route('/data')
+        @app.get('/protected')
         @require_auth
-        def get_data(current_user):
-            return jsonify({"uid": current_user["uid"], "email": current_user["email"]})
-
-    The decoded Firebase token is passed as the first argument (current_user).
+        def protected(current_user):
+            return jsonify({"uid": current_user["uid"]})
     """
     @wraps(f)
     def decorated(*args, **kwargs):
