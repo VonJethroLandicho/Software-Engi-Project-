@@ -56,6 +56,13 @@ async function fetchState() {
                 barberCard.id = barberCardId;
                 barberCard.className = `seat-card status-${barber.status}`;
                 grid.appendChild(barberCard);
+                
+                let serviceDropdownHtml = `<select id="walkin-service-${barber.id}" class="walkin-input" style="margin-top: 5px; margin-bottom: 5px; font-size:0.85em; padding: 6px;">`;
+                SERVICE_MENU.forEach(s => {
+                    serviceDropdownHtml += `<option value="${s.name}" data-mins="${s.mins}">${s.name} (${s.mins} mins)</option>`;
+                });
+                serviceDropdownHtml += `</select>`;
+
                 barberCard.innerHTML = `
                     <div class="counter-group">Cuts: <span id="counter-${barber.id}"></span> <button class="edit-counter-btn" id="edit-counter-${barber.id}">✎</button></div>
                     <div class="card-header">
@@ -67,20 +74,16 @@ async function fetchState() {
                         <div style="text-align:left; font-size:0.85em; font-weight:bold; color:#666; margin-bottom:5px;">Waiting Line (Max 2):</div>
                         <div class="queue-row" id="queue-${barber.id}"></div>
                     </div>
-                    <div class="walkin-group">
+                    <div class="walkin-group" style="display:flex; flex-direction:column; gap:3px;">
                         <input type="text" id="walkin-input-${barber.id}" class="walkin-input" placeholder="Enter name...">
-                        <button class="btn btn-dark btn-small" id="submit-walkin-${barber.id}">Add</button>
+                        ${serviceDropdownHtml}
+                        <button class="btn btn-dark btn-small" id="submit-walkin-${barber.id}" style="margin-top:5px;">Add Walk-in</button>
                     </div>
                     <div class="controls" id="controls-${barber.id}"></div>
                 `;
                 
                 document.getElementById(`submit-walkin-${barber.id}`).onclick = () => window.submitWalkIn(barber.id);
                 document.getElementById(`edit-counter-${barber.id}`).onclick = () => window.promptEditCounter(barber.id, barber.cuts_today);
-                
-                const dropzone = document.getElementById(`dropzone-${barber.id}`);
-                dropzone.ondragover = (event) => { event.preventDefault(); dropzone.classList.add('drag-over') };
-                dropzone.ondragleave = () => { dropzone.classList.remove('drag-over') };
-                dropzone.ondrop = (event) => { window.handleDrop(event, barber.id) };
             }
 
             barberCard.className = `seat-card status-${barber.status}`;
@@ -92,25 +95,26 @@ async function fetchState() {
                 dropzone.innerHTML = `Offline`;
                 dropzone.className = "active-seat-zone";
             } else if (barber.status === 'cutting' && barber.current_customer) {
-                dropzone.innerHTML = `✂️ Cutting: ${barber.current_customer.name}`;
+                let serviceText = barber.current_customer.service ? `<br><span style="font-size:0.85em; font-weight:normal; color:#ddd;">${barber.current_customer.service}</span>` : '';
+                dropzone.innerHTML = `✂️ Cutting: ${barber.current_customer.name} ${serviceText}`;
                 dropzone.className = "active-seat-zone cutting";
             } else {
-                dropzone.innerHTML = `Drop Name Here`;
+                dropzone.innerHTML = `Empty Seat`;
                 dropzone.className = "active-seat-zone";
             }
 
             renderQueue(`queue-${barber.id}`, barber.queue, barber.id);
 
             const input = document.getElementById(`walkin-input-${barber.id}`);
+            const serviceDrop = document.getElementById(`walkin-service-${barber.id}`);
             const submitBtn = document.getElementById(`submit-walkin-${barber.id}`);
-            input.disabled = !barber.is_valid_choice || barber.status === 'offline';
-            submitBtn.disabled = !barber.is_valid_choice || barber.status === 'offline';
             
-            if (!barber.is_valid_choice && barber.status !== 'offline'){ 
-                input.placeholder = "Line full (Max 2)";
-            } else { 
-                input.placeholder = "Enter name...";
-            }
+            let isFull = !barber.is_valid_choice && barber.status !== 'offline';
+            input.disabled = isFull || barber.status === 'offline';
+            serviceDrop.disabled = isFull || barber.status === 'offline';
+            submitBtn.disabled = isFull || barber.status === 'offline';
+            
+            input.placeholder = isFull ? "Line full (Max 2)" : "Enter name...";
 
             const controls = document.getElementById(`controls-${barber.id}`);
             let buttonsHtml = '';
@@ -148,14 +152,28 @@ function renderQueue(queueContainerId, queueList, barberId) {
         const chip = document.createElement('div');
         chip.className = 'name-chip';
         chip.dataset.customerId = customer.id;
-        chip.draggable = true;
-        chip.ondragstart = (event) => { event.dataTransfer.setData('text/plain', customer.id); };
+        chip.style.display = 'flex';
+        chip.style.justifyContent = 'space-between';
+        chip.style.alignItems = 'center';
+        chip.style.padding = '8px 12px'; // Matched padding
+        chip.style.background = 'var(--black)'; // Added background to match
         
-        // Added the clickable "✕" icon for removing a walk-in
-        chip.innerHTML = `👤 ${customer.name} 
-            <span onclick="window.removeFromQueue(${barberId}, ${customer.id}, event)" 
-                  style="margin-left: 8px; color: #ffaaaa; cursor: pointer; font-weight: bold; font-size: 1.1em;" 
-                  title="Remove from line">✕</span>`;
+        let serviceName = customer.service || "Haircut";
+        let durationMins = customer.mins || 30;
+        
+        chip.innerHTML = `
+            <div style="display:flex; flex-direction:column; text-align:left;">
+                <span style="font-weight:bold; font-size: 1.1em; color: white;">👤 ${customer.name}</span>
+                <span style="font-size: 0.95em; color: #fff; margin-top: 2px;">${serviceName} (${durationMins}m)</span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 8px;">
+                <button onclick="window.updateStatus(${barberId}, 'cutting', ${customer.id})" 
+                        class="btn btn-dark" 
+                        style="padding: 8px 15px; font-size: 0.9em; border-radius:6px; font-weight:bold; border: 1px solid white;">Seat</button> 
+                <span onclick="window.removeFromQueue(${barberId}, ${customer.id}, event)" 
+                      style="color: #ffaaaa; cursor: pointer; font-weight: bold; font-size: 1.2em; line-height: 1;" 
+                      title="Remove from line">✕</span>
+            </div>`;
         container.appendChild(chip);
     });
 }
@@ -206,7 +224,6 @@ function renderAppointments(appointments, barbers) {
 function buildApptCard(appt, barbers, isPending) {
     const barberName = barbers.find(b => b.id === appt.barber_id)?.name || "Unknown Barber";
     
-    // Time Calculations for End Time Display
     let serviceObj = SERVICE_MENU.find(srv => srv.name === appt.service);
     let duration = serviceObj ? serviceObj.mins : 30;
     let end24 = calculateEndTime(appt.time, duration);
@@ -255,13 +272,23 @@ window.manageAppt = async (apptId, action) => {
 
 window.submitWalkIn = async (barberId) => {
     const input = document.getElementById(`walkin-input-${barberId}`);
+    const serviceDrop = document.getElementById(`walkin-service-${barberId}`);
+    
     const name = input.value.trim();
+    const serviceName = serviceDrop.value;
+    const durationMins = parseInt(serviceDrop.options[serviceDrop.selectedIndex].getAttribute('data-mins'));
+    
     if (!name) return alert("Please enter a name.");
 
     const res = await fetch(`${API_BASE}/queue/walk-in`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ barber_id: barberId, customer_name: name })
+        body: JSON.stringify({ 
+            barber_id: barberId, 
+            customer_name: name,
+            service: serviceName,
+            mins: durationMins
+        })
     });
     
     const resultData = await res.json();
@@ -275,18 +302,8 @@ window.submitWalkIn = async (barberId) => {
     fetchState();
 };
 
-window.handleDrop = (event, barberId) => {
-    event.preventDefault();
-    document.getElementById(`dropzone-${barberId}`).classList.remove('drag-over');
-    const customerId = event.dataTransfer.getData('text/plain');
-    if (customerId) {
-        window.updateStatus(barberId, 'cutting', customerId);
-    }
-};
-
-// NEW: Remove from Queue function
 window.removeFromQueue = async (barberId, customerId, event) => {
-    event.stopPropagation(); // Prevents the drag-and-drop from triggering when you click the X
+    event.stopPropagation();
     if (confirm("Remove this customer from the waiting line?")) {
         await fetch(`${API_BASE}/queue/remove`, {
             method: 'POST',

@@ -10,7 +10,11 @@ def add_walk_in():
         
     data = request.json
     db = get_db()
-    success = db.add_walk_in(data['barber_id'], data['customer_name'])
+    # Now extracts service and mins, defaulting to Haircut (30 mins) if somehow missed
+    service = data.get('service', 'Haircut')
+    mins = data.get('mins', 30)
+    
+    success = db.add_walk_in(data['barber_id'], data['customer_name'], service, mins)
     return jsonify({"success": success}), 200
 
 @queue_bp.route('/remove', methods=['POST'])

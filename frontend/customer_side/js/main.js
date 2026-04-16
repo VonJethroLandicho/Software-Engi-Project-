@@ -1,5 +1,6 @@
 const API_BASE = 'http://127.0.0.1:5000/api/customer';
 let globalBarbers = [];
+let currentApptTab = 'All';
 
 const SERVICE_MENU = [
     { name: "Haircut", price: "P200", desc: "With blow dry & pomade", mins: 30 },
@@ -27,7 +28,6 @@ function formatAMPM(time24) {
     return `${hours}:${minutes} ${ampm}`;
 }
 
-// Calculates the exact end time based on the service selected
 function calculateEndTime(startTime, durationMins) {
     let [hours, minutes] = startTime.split(':').map(Number);
     let date = new Date(2000, 0, 1, hours, minutes);
@@ -46,6 +46,11 @@ async function fetchState() {
         const grid = document.getElementById('seat-grid');
         grid.innerHTML = '';
         data.barbers.forEach(barber => grid.appendChild(createCustomerCard(barber)));
+
+        // Render the new appointments dashboard
+        if(data.appointments) {
+            renderAppointments(data.appointments, data.barbers);
+        }
     } catch (e) { console.error("API Offline", e); }
 }
 
@@ -54,14 +59,45 @@ function createCustomerCard(barber) {
     card.className = `seat-card status-${barber.status}`;
     
     let activeHtml = barber.status === 'offline' ? `Offline` : `Empty Seat`;
-    if (barber.status === 'cutting') activeHtml = `✂️ Currently Busy`;
+    if (barber.status === 'cutting') {
+        if (barber.current_customer) {
+            let serviceName = barber.current_customer.service || "Haircut";
+            let totalMins = barber.current_customer.mins || 30;
+            let elapsedMins = 0;
+            
+            // Calculate live elapsed time
+            if (barber.current_customer.start_time) {
+                let startTime = new Date(barber.current_customer.start_time);
+                let now = new Date();
+                elapsedMins = Math.floor((now - startTime) / 60000);
+            }
+            
+            activeHtml = `
+                <div style="text-align:center;">
+                    <span style="font-size:1.2em;">✂️ Occupied</span><br>
+                    <span style="font-size:0.9em; color:#ddd;">${serviceName} (${totalMins}m)</span><br>
+                    <span style="font-size:0.85em; color:#ffaaaa; font-weight:bold; margin-top:5px; display:inline-block;">Elapsed: ${elapsedMins} mins</span>
+                </div>`;
+        } else {
+            activeHtml = `✂️ Currently Busy`;
+        }
+    }
 
     let queueHtml = barber.queue.length === 0 ? `<span style="color:#aaa; font-size:0.8em;">No Line</span>` : ``;
-    barber.queue.forEach(() => { queueHtml += `<div class="name-chip">👤 Waiting</div>`; });
+    barber.queue.forEach((customer) => { 
+        let serviceName = customer.service || "Haircut";
+        let durationMins = customer.mins || 30;
+        
+        // Changed fonts to be white, bolder, and slightly larger
+        queueHtml += `
+            <div class="name-chip" style="display:flex; flex-direction:column; align-items:flex-start; padding: 8px 12px; background: var(--black);">
+                <span style="font-weight:bold; font-size: 1.1em; color: white;">👤 Waiting</span>
+                <span style="font-size: 0.95em; color: #fff; margin-top: 2px;">${serviceName} (${durationMins}m)</span>
+            </div>`; 
+    });
 
     const btnState = barber.status === 'offline' ? 'disabled' : '';
 
-    // Removed the booking button here entirely. Only Appointed Schedules remains.
     card.innerHTML = `
         <div class="card-header">
             <h2>${barber.name}</h2>
@@ -79,6 +115,80 @@ function createCustomerCard(barber) {
     return card;
 }
 
+// -- NEW: APPOINTMENTS DASHBOARD LOGIC FOR CUSTOMERS --
+window.switchTab = (tabValue) => {
+    currentApptTab = tabValue;
+    fetchState(); 
+};
+
+function renderAppointments(appointments, barbers) {
+    const list = document.getElementById('appointment-list');
+    if (!list) return; // Failsafe if HTML isn't updated yet
+    
+    let tabsHtml = `<div style="display:flex; gap:10px; margin-bottom: 25px; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
+        <button class="btn ${currentApptTab === 'All' ? 'btn-red' : 'btn-outline'}" style="width: auto; padding: 8px 15px;" onclick="window.switchTab('All')">All Appointments</button>`;
+    
+    barbers.forEach(b => {
+        tabsHtml += `<button class="btn ${currentApptTab === b.id ? 'btn-red' : 'btn-outline'}" style="width: auto; padding: 8px 15px;" onclick="window.switchTab(${b.id})">${b.name}</button>`;
+    });
+    tabsHtml += `</div>`;
+
+    let filteredAppts = appointments;
+    if (currentApptTab !== 'All') {
+        filteredAppts = appointments.filter(a => a.barber_id === currentApptTab);
+    }
+
+    let pendingAppts = filteredAppts.filter(a => a.status === 'pending');
+    let acceptedAppts = filteredAppts.filter(a => a.status === 'accepted');
+
+    let contentHtml = '';
+
+    contentHtml += `<h3 style="margin-bottom: 15px; color: var(--text-dark);">Pending Requests (${pendingAppts.length})</h3>`;
+    if (pendingAppts.length === 0) {
+        contentHtml += `<p style="color:#888; margin-bottom: 30px;">No pending requests in this view.</p>`;
+    } else {
+        pendingAppts.forEach(appt => { contentHtml += buildPublicApptCard(appt, barbers, "PENDING"); });
+    }
+
+    contentHtml += `<h3 style="margin-top: 40px; margin-bottom: 15px; color: var(--red);">Accepted Appointments (${acceptedAppts.length})</h3>`;
+    if (acceptedAppts.length === 0) {
+        contentHtml += `<p style="color:#888;">No accepted appointments in this view.</p>`;
+    } else {
+        acceptedAppts.forEach(appt => { contentHtml += buildPublicApptCard(appt, barbers, "ACCEPTED"); });
+    }
+
+    list.innerHTML = tabsHtml + contentHtml;
+}
+
+function buildPublicApptCard(appt, barbers, statusText) {
+    const barberName = barbers.find(b => b.id === appt.barber_id)?.name || "Unknown Barber";
+    
+    let serviceObj = SERVICE_MENU.find(srv => srv.name === appt.service);
+    let duration = serviceObj ? serviceObj.mins : 30;
+    let end24 = calculateEndTime(appt.time, duration);
+    let displayTime = `${formatAMPM(appt.time)} - ${formatAMPM(end24)}`;
+    
+    let statusColor = statusText === 'ACCEPTED' ? '#00695c' : '#b71c1c';
+
+    // Stripped down card - no names, no buttons, just schedule data
+    return `
+        <div style="background: #fdfdfd; border: 1px solid #ccc; border-left: 5px solid ${statusColor}; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+            <div style="display:flex; justify-content: space-between; align-items:center;">
+                <div style="font-size: 0.95em; line-height: 1.6;">
+                    <h4 style="font-size: 1.1em; color: var(--black); margin-bottom: 5px;">${appt.date} @ ${displayTime}</h4>
+                    <strong>Barber:</strong> ${barberName} <br>
+                    <strong>Service:</strong> ${appt.service}
+                </div>
+                <div style="font-weight: bold; font-size: 0.9em; color: ${statusColor}; border: 1px solid ${statusColor}; padding: 5px 10px; border-radius: 4px;">
+                    ${statusText}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// -----------------------------------------------------------
+
 window.viewSchedule = async (barberId, barberName) => {
     const res = await fetch(`${API_BASE}/schedule/${barberId}`);
     const data = await res.json();
@@ -89,7 +199,6 @@ window.viewSchedule = async (barberId, barberName) => {
     } else {
         data.schedule.sort((a, b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time));
         data.schedule.forEach(s => {
-            // Find the duration of the service, fallback to 30 mins if not found
             let serviceObj = SERVICE_MENU.find(srv => srv.name === s.service);
             let duration = serviceObj ? serviceObj.mins : 30;
             let end24 = calculateEndTime(s.time, duration);
@@ -113,7 +222,6 @@ window.openBooking = () => {
     const minStr = minDate.toISOString().split('T')[0];
     const maxStr = maxDate.toISOString().split('T')[0];
 
-    // Create dropdown of active barbers
     let barberOptions = globalBarbers.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
 
     let serviceHtml = `<div style="max-height: 180px; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; padding: 10px; background: #fafafa;">`;

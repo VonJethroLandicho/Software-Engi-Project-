@@ -128,7 +128,8 @@ def auth_logout(current_user):
 # ── Firebase config helper ────────────────────────────────────────────────────
 def render_html_with_firebase(filename):
     filepath = os.path.join(FRONTEND_DIR, filename)
-    with open(filepath, 'r') as f:
+    # FIX APPLIED HERE: Added encoding='utf-8' to prevent Windows charmap crashes
+    with open(filepath, 'r', encoding='utf-8') as f:
         html = f.read()
     config = {
         "apiKey":            os.getenv("FIREBASE_API_KEY", ""),
