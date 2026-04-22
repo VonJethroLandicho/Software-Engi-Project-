@@ -6,6 +6,16 @@
   <title>Mugshot PH — Customer Login</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;600&family=Special+Elite&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    window.__FIREBASE_CONFIG__ = {
+      apiKey:            "AIzaSyAuk5EDcS0jtZidiWW-am8ba0QGEHyomU8",
+      authDomain:        "software-eng-15208.firebaseapp.com",
+      projectId:         "software-eng-15208",
+      storageBucket:     "software-eng-15208.firebasestorage.app",
+      messagingSenderId: "429926523792",
+      appId:             "1:429926523792:web:e6409e24cf619950c40915"
+    };
+  </script>
 </head>
 <body>
 
@@ -61,11 +71,12 @@
         <a href="#" class="forgot-link">Forgot Password?</a>
       </div>
 
-      <button class="btn-signin" onclick="handleSignIn()">Sign In</button>
+      <button class="btn-signin" id="signinBtn" onclick="handleSignIn()">Sign In</button>
 
       <div class="or-divider"><span>Or continue with</span></div>
 
-      <button class="btn-google" id="googleBtn" onclick="handleGoogleSignIn()">
+      <!-- onclick calls the module-scoped function via window -->
+      <button class="btn-google" id="googleBtn" onclick="window.handleGoogleSignIn()">
         <span class="google-g">G</span>
         Continue with Google
       </button>
@@ -76,55 +87,52 @@
   </div>
 
   <script type="module">
-    import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
       getAuth,
       GoogleAuthProvider,
-      signInWithRedirect,
-      getRedirectResult
+      signInWithPopup
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    // Config injected by Flask via render_html_with_firebase()
     const app      = initializeApp(window.__FIREBASE_CONFIG__);
     const auth     = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    // ── Handle Google redirect result on page load ──────────────────────────
-    try {
-      const result = await getRedirectResult(auth);
-      if (result && result.user) {
-        const idToken = await result.user.getIdToken();
-        localStorage.setItem('id_token', idToken);
-        window.location.href = '/customer';
-      }
-    } catch (err) {
-      if (err.code !== 'auth/no-current-user' && err.code !== 'auth/null-user') {
-        alert('Google Sign-In error: ' + err.message);
-      }
-    }
-
-    // ── Google Sign-In ──────────────────────────────────────────────────────
+    // Exposed to window so the onclick attribute can reach it
     window.handleGoogleSignIn = async function () {
       const btn = document.getElementById('googleBtn');
       btn.disabled      = true;
       btn.style.opacity = '0.6';
+      btn.innerHTML     = '<span class="google-g">G</span> Signing in...';
+
       try {
-        await signInWithRedirect(auth, provider);
-        // page will redirect to Google — execution stops here
+        // signInWithPopup must be called synchronously from a user gesture
+        const result  = await signInWithPopup(auth, provider);
+        const idToken = await result.user.getIdToken();
+        localStorage.setItem('id_token', idToken);
+        btn.innerHTML = '<span class="google-g">G</span> ✓ Success';
+        btn.style.background = '#1a6b3a';
+        setTimeout(() => { window.location.href = '/customer'; }, 800);
       } catch (err) {
-        alert('Google Sign-In failed: ' + err.message);
+        console.error('Google Sign-In error:', err.code, err.message);
+        if (err.code === 'auth/popup-blocked') {
+          alert('Popup was blocked by your browser. Please allow popups for 127.0.0.1 and try again.');
+        } else if (err.code !== 'auth/popup-closed-by-user') {
+          alert('Google Sign-In failed: ' + err.message);
+        }
         btn.disabled      = false;
         btn.style.opacity = '1';
+        btn.style.background = '';
+        btn.innerHTML     = '<span class="google-g">G</span> Continue with Google';
       }
     };
   </script>
 
   <script>
-    // ── Email/Password Sign-In (no Firebase SDK needed — uses Flask endpoint) ──
     async function handleSignIn() {
       const email    = document.getElementById('emailInput').value.trim();
       const password = document.getElementById('pwdInput').value;
-      const btn      = document.querySelector('.btn-signin');
+      const btn      = document.getElementById('signinBtn');
 
       if (!email || !password) { alert("Please enter both email and password."); return; }
 

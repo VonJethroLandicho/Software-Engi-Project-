@@ -147,7 +147,7 @@ def render_html_with_firebase(filename):
 # ── Frontend routes ───────────────────────────────────────────────────────────
 @app.get('/')
 def root():
-    return send_file(os.path.join(FRONTEND_DIR, 'welcome.html'))
+    return send_file(os.path.join(FRONTEND_DIR, 'webpage/welcome.html'))
 
 @app.get('/welcome')
 def welcome_page():
@@ -155,16 +155,15 @@ def welcome_page():
 
 @app.get('/staff-login')
 def staff_login_page():
-    return render_html_with_firebase('staff_login.html')
+    return render_html_with_firebase('webpage/staff_login.html')
 
 @app.get('/customer-login')
 def customer_login_page():
-    return render_html_with_firebase('customer_login.html')
+    return render_html_with_firebase('webpage/customer_login.html')
 
 @app.get('/customer-register')
 def customer_register_page():
-    return render_html_with_firebase('customer_register.html')
-
+    return render_html_with_firebase('webpage/customer_register.html')
 @app.get('/admin')
 def admin_dashboard():
     return send_file(os.path.join(FRONTEND_DIR, 'admin_side/index.html'))
