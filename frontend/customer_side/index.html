@@ -14,9 +14,12 @@
     </header>
 
     <main class="dashboard-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="color: var(--red);">Live Barbershop Floor</h2>
-            <button class="btn btn-red" style="width: auto; padding: 10px 20px;" onclick="openBooking()">Book an Appointment</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <h2 style="color: var(--red); margin: 0;">Live Barbershop Floor</h2>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn btn-outline" style="color: var(--black); border-color: var(--black); font-weight: bold; width: auto; padding: 10px 20px;" onclick="window.viewServicesMenu()">☰ View Services Menu</button>
+                <button class="btn btn-red" style="width: auto; padding: 10px 20px;" onclick="openBooking()">Book an Appointment</button>
+            </div>
         </div>
 
         <section class="seat-grid" id="seat-grid">

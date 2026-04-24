@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Load .env from the same folder as this script
-load_dotenv(os.path.join(SCRIPT_DIR, '.env'))
+load_dotenv(os.path.join(os.path.dirname(SCRIPT_DIR), '.env'))
 
 # ── Add your staff emails here ─────────────────────────────────────────────
 STAFF_EMAILS = [

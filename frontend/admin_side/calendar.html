@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mugshot Daily Cuts History</title>
+    <link rel="stylesheet" href="/admin_side/css/theme.css">
+    <link rel="stylesheet" href="/admin_side/css/layout.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        .layout-container { display: flex; gap: 20px; align-items: flex-start; }
+        .calendar-panel { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .details-panel { flex: 2; }
+        
+        .cal-header { display: flex; justify-content: center; gap: 10px; align-items: center; margin-bottom: 15px; background: #fafafa; padding: 15px; border-radius: 6px; border: 1px solid #eee; }
+        .cal-header select { padding: 8px; font-size: 1.1em; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; font-weight: bold; color: var(--black); }
+        
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .cal-day-label { font-weight: bold; color: #888; font-size: 0.85em; padding-bottom: 5px; }
+        .cal-day { padding: 10px; background: #f9f9f9; border-radius: 4px; cursor: pointer; border: 1px solid #eee; transition: all 0.2s; }
+        .cal-day:hover { background: #ffebee; border-color: var(--red); }
+        .cal-day.empty { background: transparent; border: none; cursor: default; }
+        .cal-day.has-record { background: #ffebee; color: var(--red); font-weight: bold; border: 1px solid var(--red); }
+        .cal-day.selected { background: var(--red); color: white; border: 1px solid var(--red); }
+
+        .report-card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--red); }
+        .barber-stat { font-size: 0.9em; padding: 5px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .barber-stat:last-child { border-bottom: none; }
+
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center; overflow-y:auto; padding: 20px;}
+        .modal-content { background:white; padding:40px; border-radius:10px; width: 100%; max-width: 800px; border-top: 5px solid var(--red); position: relative; margin: auto; }
+        .chart-box { margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 30px;}
+        .ai-text { background: #fafafa; padding: 15px; border-left: 4px solid var(--red); border-radius: 4px; font-size: 0.95em; color: #444; margin-top: 15px; line-height: 1.6;}
+    </style>
+</head>
+<body>
+    <header class="top-bar" style="position: relative;">
+        <h1>MUGSHOT <span class="ph">PH</span></h1>
+        <p>Daily Cuts History</p>
+        <button onclick="window.location.href='/admin_side/index.html'" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: transparent; color: white; border: 2px solid white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s;">
+          Back to Dashboard
+        </button>
+    </header>
+
+    <main class="dashboard-container">
+        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <h2 style="margin: 0; color: var(--black);">AI Performance Analytics</h2>
+            <div style="display:flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <input type="date" id="report-start" class="form-control" style="width: auto;">
+                <span style="font-weight:bold;">to</span>
+                <input type="date" id="report-end" class="form-control" style="width: auto;">
+                <button class="btn btn-red" onclick="window.openAIReport()">📊 Generate Report</button>
+            </div>
+        </div>
+
+        <div class="layout-container">
+            <div class="calendar-panel">
+                <div class="cal-header">
+                    <select id="month-select"></select>
+                    <select id="year-select"></select>
+                </div>
+                <div class="cal-grid">
+                    <div class="cal-day-label">Sun</div><div class="cal-day-label">Mon</div>
+                    <div class="cal-day-label">Tue</div><div class="cal-day-label">Wed</div>
+                    <div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div>
+                    <div class="cal-day-label">Sat</div>
+                </div>
+                <div class="cal-grid" id="cal-days-container"></div>
+            </div>
+
+            <div class="details-panel" id="report-details-container">
+                <div style="background: white; padding: 40px; text-align: center; border-radius: 8px; color: #888;">
+                    Select a date on the calendar to view its records.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="ai-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button onclick="document.getElementById('ai-modal').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; cursor: pointer; color: #888;">&times;</button>
+            
+            <div id="pdf-content-area" style="padding: 20px; background: white;">
+                <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--black); padding-bottom: 20px;">
+                    <h1 style="color: var(--black); margin:0;">MUGSHOT PH</h1>
+                    <h2 style="color: var(--red); margin-top:5px;">Executive AI Analytics Report</h2>
+                    <p id="report-date-range" style="color: #666; font-weight:bold;"></p>
+                </div>
+
+                <div id="report-loading" style="text-align:center; padding: 50px; font-weight:bold; color:var(--red);">
+                    Analyzing Data & Generating Insights... Please wait.
+                </div>
+
+                <div id="report-charts" style="display:none;">
+                    <div class="chart-box">
+                        <h3>1. Daily Customers Trend</h3>
+                        <canvas id="chart-trend"></canvas>
+                        <div class="ai-text" id="ai-trend"></div>
+                    </div>
+                    <div class="chart-box">
+                        <h3>2. Customers per Barber</h3>
+                        <canvas id="chart-barber"></canvas>
+                        <div class="ai-text" id="ai-barber"></div>
+                    </div>
+                    <div class="chart-box">
+                        <h3>3. Walk-in vs Appointment Ratio</h3>
+                        <div style="max-width: 400px; margin: auto;"><canvas id="chart-ratio"></canvas></div>
+                        <div class="ai-text" id="ai-ratio"></div>
+                    </div>
+                    <div class="chart-box">
+                        <h3>4. Peak Hours Analysis</h3>
+                        <canvas id="chart-hours"></canvas>
+                        <div class="ai-text" id="ai-hours"></div>
+                    </div>
+                    <div class="chart-box" style="border-bottom:none;">
+                        <h3>5. Service Distribution</h3>
+                        <div style="max-width: 400px; margin: auto;"><canvas id="chart-services"></canvas></div>
+                        <div class="ai-text" id="ai-services"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="btn-download-pdf" class="btn btn-red" style="width:100%; padding:15px; font-size:1.1em; display:none; margin-top: 20px;" onclick="window.downloadPDF()">⬇️ Download PDF Report</button>
+        </div>
+    </div>
+
+    <script src="/admin_side/js/calendar.js?v=1.1"></script>
+</body>
+</html>

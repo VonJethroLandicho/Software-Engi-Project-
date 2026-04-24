@@ -75,7 +75,6 @@
 
       <div class="or-divider"><span>Or continue with</span></div>
 
-      <!-- onclick calls the module-scoped function via window -->
       <button class="btn-google" id="googleBtn" onclick="window.handleGoogleSignIn()">
         <span class="google-g">G</span>
         Continue with Google
@@ -91,7 +90,8 @@
     import {
       getAuth,
       GoogleAuthProvider,
-      signInWithPopup
+      signInWithPopup,
+      signInWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const app      = initializeApp(window.__FIREBASE_CONFIG__);
@@ -106,10 +106,12 @@
       btn.innerHTML     = '<span class="google-g">G</span> Signing in...';
 
       try {
-        // signInWithPopup must be called synchronously from a user gesture
         const result  = await signInWithPopup(auth, provider);
         const idToken = await result.user.getIdToken();
+        
         localStorage.setItem('id_token', idToken);
+        localStorage.setItem('uid', result.user.uid); // Saves UID to trigger autofill
+        
         btn.innerHTML = '<span class="google-g">G</span> ✓ Success';
         btn.style.background = '#1a6b3a';
         setTimeout(() => { window.location.href = '/customer'; }, 800);
@@ -126,10 +128,8 @@
         btn.innerHTML     = '<span class="google-g">G</span> Continue with Google';
       }
     };
-  </script>
 
-  <script>
-    async function handleSignIn() {
+    window.handleSignIn = async function () {
       const email    = document.getElementById('emailInput').value.trim();
       const password = document.getElementById('pwdInput').value;
       const btn      = document.getElementById('signinBtn');
@@ -141,34 +141,27 @@
       btn.style.opacity = '0.7';
 
       try {
-        const response = await fetch('/auth/login', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ email, password })
-        });
-        const data = await response.json();
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const idToken = await userCredential.user.getIdToken();
+        
+        localStorage.setItem('id_token', idToken);
+        localStorage.setItem('uid', userCredential.user.uid); // Saves UID to trigger autofill
 
-        if (response.ok) {
-          localStorage.setItem('id_token', data.id_token);
-          btn.textContent      = '✓ Success';
-          btn.style.background = '#1a6b3a';
-          setTimeout(() => { window.location.href = '/customer'; }, 900);
-        } else {
-          alert('Login Error: ' + (data.detail || 'Access Denied'));
-          resetButton(btn);
-        }
+        btn.textContent      = '✓ Success';
+        btn.style.background = '#1a6b3a';
+        setTimeout(() => { window.location.href = '/customer'; }, 900);
       } catch (err) {
-        alert('Could not connect to the server. Is Flask running?');
-        resetButton(btn);
+        const msg = err.code === 'auth/invalid-credential' ? 'Incorrect email or password.' : err.message;
+        alert('Login Error: ' + msg);
+        btn.textContent      = 'Sign In';
+        btn.disabled         = false;
+        btn.style.opacity    = '1';
+        btn.style.background = '';
       }
-    }
+    };
+  </script>
 
-    function resetButton(btn) {
-      btn.textContent      = 'Sign In';
-      btn.disabled         = false;
-      btn.style.opacity    = '1';
-      btn.style.background = '';
-    }
+  <script>
     function togglePwd() {
       const el = document.getElementById('pwdInput');
       el.type = el.type === 'password' ? 'text' : 'password';
@@ -177,7 +170,9 @@
       document.getElementById('checkbox').classList.toggle('checked');
     }
     document.addEventListener('keydown', e => {
-      if (e.key === 'Enter') handleSignIn();
+      if (e.key === 'Enter') {
+          if (window.handleSignIn) window.handleSignIn();
+      }
     });
   </script>
 

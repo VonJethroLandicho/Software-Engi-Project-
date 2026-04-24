@@ -6,35 +6,26 @@
     <title>Mugshot Barbershop - Admin</title>
     <link rel="stylesheet" href="/admin_side/css/theme.css">
     <link rel="stylesheet" href="/admin_side/css/layout.css">
+    <style>
+        .control-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .control-group button { width: auto; padding: 8px 15px; font-size: 0.9em; }
+    </style>
 </head>
 <body>
-
-    <!-- ── AUTH GUARD — runs before anything else ──────────────────────────── -->
     <script>
       (async () => {
         const token = localStorage.getItem("id_token");
-
-        // No token → send to login
-        if (!token) {
-          window.location.href = '/';
-          return;
-        }
-
+        if (!token) { window.location.href = '/'; return; }
         try {
           const res = await fetch("http://127.0.0.1:5000/auth/me", {
             headers: { "Authorization": `Bearer ${token}` }
           });
-
           if (!res.ok) throw new Error("Session invalid");
-
           const user = await res.json();
-
-          // Show logged-in email once DOM is ready
           document.addEventListener("DOMContentLoaded", () => {
             const emailEl = document.getElementById("admin-email");
             if (emailEl) emailEl.textContent = user.email;
           });
-
         } catch {
           localStorage.removeItem("id_token");
           window.location.href = '/';
@@ -44,10 +35,8 @@
       async function logout() {
         const token = localStorage.getItem("id_token");
         if (token) {
-          // Tell Flask to revoke all sessions server-side
           await fetch("http://127.0.0.1:5000/auth/logout", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` }
+            method: "POST", headers: { "Authorization": `Bearer ${token}` }
           }).catch(() => {});
         }
         localStorage.removeItem("id_token");
@@ -55,15 +44,35 @@
       }
     </script>
 
-    <header class="top-bar">
+    <header class="top-bar" style="position: relative;">
         <h1>MUGSHOT <span class="ph">PH</span></h1>
         <p>Barbershop Admin Control Center — <span id="admin-email"></span></p>
-        <button onclick="logout()" style="float:right; cursor:pointer; padding: .4rem .9rem; margin-top: .5rem;">
+        <button onclick="logout()" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: transparent; color: white; border: 2px solid white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s;">
           Logout
         </button>
     </header>
 
     <main class="dashboard-container">
+        <section style="background: #fdfdfd; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
+            
+            <div class="control-group">
+                <button class="btn btn-outline" onclick="window.openAdminModal('addBarber')">+ Add Barber</button>
+                <button class="btn btn-outline" onclick="window.openAdminModal('removeBarber')" style="color: #b71c1c; border-color: #b71c1c;">- Remove Barber</button>
+            </div>
+            
+            <div class="control-group">
+                <button class="btn btn-outline" onclick="window.openAdminModal('viewServices')" style="color:var(--black); border-color:var(--black); font-weight:bold;">☰ View Services</button>
+                <button class="btn btn-outline" onclick="window.openAdminModal('addService')" style="color:#00695c; border-color:#00695c;">+ Add</button>
+                <button class="btn btn-outline" onclick="window.openAdminModal('editService')" style="color:#00695c; border-color:#00695c;">✎ Edit</button>
+                <button class="btn btn-outline" onclick="window.openAdminModal('removeService')" style="color:#b71c1c; border-color:#b71c1c;">- Remove</button>
+            </div>
+
+            <div class="control-group" style="margin-left: auto;">
+                <button class="btn btn-dark" onclick="window.location.href='/admin_side/calendar.html'">Daily Cuts History</button>
+                <button class="btn btn-red" onclick="window.saveCurrentRecords()">Save Current Records</button>
+            </div>
+        </section>
+
         <section class="module-section">
             <div class="seat-grid" id="seat-grid"></div>
         </section>
@@ -74,9 +83,13 @@
         </section>
     </main>
 
-    <script src="/admin_side/js/modules/seat_ui.js"></script>
-    <script src="/admin_side/js/modules/queue_ui.js"></script>
-    <script src="/admin_side/js/modules/booking_ui.js"></script>
+    <div id="admin-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: none; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 20px; border-radius: 10px; max-width: 650px; width: 90%; border-top: 5px solid var(--red); position: relative; max-height: 90vh; overflow-y: auto;">
+            <button onclick="window.closeAdminModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; cursor: pointer; color: #888;">&times;</button>
+            <div id="admin-modal-body"></div>
+        </div>
+    </div>
+
     <script src="/admin_side/js/main.js"></script>
 </body>
 </html>

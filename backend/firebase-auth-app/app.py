@@ -15,6 +15,9 @@ from middleware import init_firebase, require_auth
 
 load_dotenv()
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(os.path.dirname(SCRIPT_DIR), '.env'))
+
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, '../../frontend')
 

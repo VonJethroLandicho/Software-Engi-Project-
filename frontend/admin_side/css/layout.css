@@ -10,13 +10,26 @@
 .total-cuts-shop { font-size: 0.9em; font-weight: bold; color: #666; }
 
 /* The main 3-barber grid - Compact and set width to fit the screen */
-.seat-grid { display: flex; justify-content: space-between; gap: 15px; flex-wrap: nowrap; margin-bottom: 20px;}
+/* The main grid - Upgraded to CSS Grid to enforce exactly 3 per row */
+.seat-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); /* Creates 3 equal-width columns */
+    gap: 20px; /* Space between the cards */
+    margin-bottom: 20px;
+}
 
-/* Compact card based on old design - no more scrolling needed for the whole page */
+/* Compact card based on old design */
 .seat-card {
-    background: var(--white); padding: 20px; border-radius: 8px; width: 32%; flex-shrink: 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; border-top: 5px solid #ccc;
-    display: flex; flex-direction: column; justify-content: space-between;
+    background: var(--white); 
+    padding: 20px; 
+    border-radius: 8px; 
+    /* Removed the old 'width: 32%' and 'flex-shrink' because the grid handles sizing now */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    text-align: center; 
+    border-top: 5px solid #ccc;
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between;
 }
 
 /* Internal header section of the card */
@@ -73,3 +86,40 @@
 .appointment-list { background: var(--white); border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 .appt-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
 .appt-actions { display: flex; gap: 10px; width: 250px; }
+
+/* --- NEW: LARGE MODAL STYLING --- */
+.modal-form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-form-group label {
+    flex: 0 0 160px; /* Forces labels to all be exactly 160px wide to perfectly align inputs */
+    font-size: 1.1em;
+    font-weight: bold;
+    color: var(--black);
+    text-align: right;
+    padding-right: 15px;
+}
+
+.modal-form-group input, 
+.modal-form-group select {
+    flex: 1;
+    padding: 12px 15px;
+    font-size: 1.1em;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+
+.modal-form-group select {
+    text-align: center; /* Centers text inside dropdowns */
+    cursor: pointer;
+}
+
+.modal-form-group input:focus,
+.modal-form-group select:focus {
+    border-color: var(--red);
+    outline: none;
+}
