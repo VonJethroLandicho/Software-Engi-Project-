@@ -6,6 +6,16 @@
   <title>Mugshot PH — Staff Portal</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;600&family=Special+Elite&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    window.__FIREBASE_CONFIG__ = {
+      apiKey:            "AIzaSyAuk5EDcS0jtZidiWW-am8ba0QGEHyomU8",
+      authDomain:        "software-eng-15208.firebaseapp.com",
+      projectId:         "software-eng-15208",
+      storageBucket:     "software-eng-15208.firebasestorage.app",
+      messagingSenderId: "429926523792",
+      appId:             "1:429926523792:web:e6409e24cf619950c40915"
+    };
+  </script>
 </head>
 <body>
 
@@ -51,7 +61,9 @@
         <label class="field-label">Password</label>
         <div class="field-input-wrap">
           <input class="field-input" type="password" placeholder="••••••••" id="pwdInput" />
-          <span class="field-icon" onclick="togglePwd()">👁</span>
+          <span class="field-icon pwd-toggle" id="pwdToggle" onclick="togglePwd()" title="Show password">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg>
+          </span>
         </div>
       </div>
 
@@ -60,8 +72,10 @@
           <div class="custom-checkbox checked" id="checkbox"></div>
           Remember me
         </label>
-        <a href="#" class="forgot-link">Forgot Password?</a>
+        <a href="#" class="forgot-link" onclick="handleForgotPassword()">Forgot Password?</a>
       </div>
+
+      <div id="loginFeedback" class="login-feedback" aria-live="polite"></div>
 
       <button class="btn-signin" onclick="handleSignIn()">Sign In</button>
 
@@ -69,13 +83,33 @@
 
   </div>
 
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const app  = initializeApp(window.__FIREBASE_CONFIG__);
+    const auth = getAuth(app);
+
+    window.handleForgotPassword = async function () {
+      const email = document.getElementById('emailInput').value.trim();
+      if (!email) { showFeedback('Enter the email used for your staff account, and we will send a reset link.', 'error'); return; }
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showFeedback('Password reset email sent! Check your inbox.', 'success');
+      } catch (err) {
+        showFeedback('Error sending reset email: ' + err.message, 'error');
+      }
+    };
+  </script>
+
   <script>
     async function handleSignIn() {
       const email    = document.getElementById('emailInput').value.trim();
       const password = document.getElementById('pwdInput').value;
       const btn      = document.querySelector('.btn-signin');
 
-      if (!email || !password) { alert("Please enter both email and password."); return; }
+      if (!email || !password) { showFeedback('Please enter both your email and password to continue.', 'error'); return; }
 
       btn.textContent   = 'Signing In...';
       btn.disabled      = true;
@@ -95,11 +129,11 @@
           btn.style.background = '#1a6b3a';
           setTimeout(() => { window.location.href = '/admin'; }, 1000);
         } else {
-          alert(data.detail || 'Access Denied');
+          showFeedback(data.detail || 'Access denied. Please check your credentials and try again.', 'error');
           resetButton(btn);
         }
       } catch (err) {
-        alert('Could not connect to the server. Is Flask running?');
+        showFeedback('Could not connect to the server. Is Flask running?', 'error');
         resetButton(btn);
       }
     }
@@ -113,7 +147,17 @@
 
     function togglePwd() {
       const pwd = document.getElementById('pwdInput');
+      const icon = document.getElementById('pwdToggle');
       pwd.type = pwd.type === 'password' ? 'text' : 'password';
+      if (icon) {
+        if (pwd.type === 'password') {
+          icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg>';
+          icon.title = 'Show password';
+        } else {
+          icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.6 2.6L1.3 3.9l3.3 3.3C3.4 8.6 2.6 10.3 2.2 12c1.8 3.3 5.5 6 10 6 1.4 0 2.8-0.3 4-0.8l3.6 3.6 1.3-1.3L2.6 2.6zM12 17c-2.8 0-5-2.2-5-5 0-0.9 0.2-1.7 0.6-2.4l1.4 1.4C9.3 11 9 11.9 9 13c0 1.7 1.3 3 3 3 1.1 0 2-0.3 2.7-0.8l1.5 1.5C15.6 16.8 13.9 17 12 17zm6.7-2.8l-1.7-1.7c0.5-0.6 0.8-1.3 0.8-2.2 0-2.8-2.2-5-5-5-0.9 0-1.7 0.2-2.4 0.6L6.9 4.3C8.1 3.8 9.5 3.5 11 3.5c4.5 0 8.2 2.7 10 6-0.4 0.8-1.1 1.5-1.8 2.1z"/></svg>';
+          icon.title = 'Hide password';
+        }
+      }
     }
 
     function toggleCheck() {

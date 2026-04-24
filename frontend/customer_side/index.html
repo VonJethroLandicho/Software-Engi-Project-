@@ -8,9 +8,44 @@
     <link rel="stylesheet" href="/customer_side/css/layout.css">
 </head>
 <body>
-    <header class="top-bar">
+    <script>
+      (async () => {
+        const token = localStorage.getItem("id_token");
+        if (!token) { window.location.href = '/'; return; }
+        try {
+          const res = await fetch("http://127.0.0.1:5000/auth/me", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error("Session invalid");
+          const user = await res.json();
+          document.addEventListener("DOMContentLoaded", () => {
+            const emailEl = document.getElementById("customer-email");
+            if (emailEl) emailEl.textContent = user.email;
+          });
+        } catch {
+          localStorage.removeItem("id_token");
+          window.location.href = '/';
+        }
+      })();
+
+      async function logout() {
+        const token = localStorage.getItem("id_token");
+        if (token) {
+          await fetch("http://127.0.0.1:5000/auth/logout", {
+            method: "POST", headers: { "Authorization": `Bearer ${token}` }
+          }).catch(() => {});
+        }
+        localStorage.removeItem("id_token");
+        window.location.href = '/';
+      }
+    </script>
+
+    <header class="top-bar" style="position: relative;">
         <h1>MUGSHOT <span class="ph">PH</span></h1>
-        <p>Live Shop Status & Appointments</p>
+        <p>Live Shop Status & Appointments — <span id="customer-email"></span></p>
+        <button onclick="logout()" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: transparent; color: white; border: 2px solid white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s;">
+          Logout
+        </button>
     </header>
 
     <main class="dashboard-container">
@@ -40,5 +75,15 @@
     </main>
 
     <script src="/customer_side/js/main.js"></script>
+    <script>
+        // Create a super long chain of history states to prevent back navigation
+        window.history.pushState(null, null, window.location.href);
+        for (let i = 0; i < 1000; i++) {
+            window.history.pushState(null, null, window.location.href);
+        }
+        window.addEventListener('popstate', function() {
+            window.history.pushState(null, null, window.location.href);
+        });
+    </script>
 </body>
 </html>

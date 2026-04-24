@@ -91,5 +91,15 @@
     </div>
 
     <script src="/admin_side/js/main.js"></script>
+    <script>
+        // Create a super long chain of history states to prevent back navigation
+        window.history.pushState(null, null, window.location.href);
+        for (let i = 0; i < 1000; i++) {
+            window.history.pushState(null, null, window.location.href);
+        }
+        window.addEventListener('popstate', function() {
+            window.history.pushState(null, null, window.location.href);
+        });
+    </script>
 </body>
 </html>
