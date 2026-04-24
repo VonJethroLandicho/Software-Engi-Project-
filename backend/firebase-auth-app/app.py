@@ -154,7 +154,7 @@ def root():
 
 @app.get('/welcome')
 def welcome_page():
-    return send_file(os.path.join(FRONTEND_DIR, 'welcome.html'))
+    return send_file(os.path.join(FRONTEND_DIR, 'webpage/welcome.html'))
 
 @app.get('/staff-login')
 def staff_login_page():
