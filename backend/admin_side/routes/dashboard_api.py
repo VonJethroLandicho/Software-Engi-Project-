@@ -112,14 +112,7 @@ def api_generate_report():
     db = get_db()
     aggregated_data = db.get_aggregated_report(start_date, end_date)
     
-    ai_response_json = generate_report_analysis(json.dumps(aggregated_data))
-    
-    ai_analysis = {}
-    if ai_response_json:
-        try:
-            ai_analysis = json.loads(ai_response_json)
-        except Exception as e:
-            print("Failed to parse AI JSON:", e)
+    ai_analysis = generate_report_analysis(json.dumps(aggregated_data)) or {}
             
     return jsonify({
         "success": True, 

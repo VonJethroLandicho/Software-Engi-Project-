@@ -3,8 +3,13 @@ import copy
 from datetime import datetime, timedelta
 from pymongo import MongoClient
 from admin_side.services.time_manager import is_time_available
+import certifi
 
-client = MongoClient(os.getenv("MONGO_URI"))
+client = MongoClient(
+    os.getenv("MONGO_URI"),
+    tlsCAFile=certifi.where(),
+    serverSelectionTimeoutMS=int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "5000"))
+)
 db = client['mugshot_db']
 
 barbers_col = db['barbers']
@@ -13,6 +18,16 @@ users_col = db['users']
 reports_col = db['daily_reports'] 
 services_col = db['services']
 settings_col = db['settings'] 
+_initialized = False
+
+def ensure_indexes():
+    barbers_col.create_index("id")
+    appts_col.create_index("id")
+    appts_col.create_index("barber_id")
+    appts_col.create_index([("status", 1), ("date", 1), ("time", 1)])
+    services_col.create_index("name")
+    reports_col.create_index("iso_date")
+    users_col.create_index("uid")
 
 def seed_database():
     if barbers_col.count_documents({}) == 0:
@@ -45,9 +60,16 @@ def seed_database():
     if settings_col.count_documents({"_id": "global_clock"}) == 0:
         settings_col.insert_one({"_id": "global_clock", "offset_ms": 0})
 
-seed_database()
+def init_storage():
+    global _initialized
+    if _initialized:
+        return
+    ensure_indexes()
+    seed_database()
+    _initialized = True
 
 def get_time_offset():
+    init_storage()
     doc = settings_col.find_one({"_id": "global_clock"})
     return doc.get("offset_ms", 0) if doc else 0
 
@@ -197,7 +219,10 @@ def get_full_state():
         else: 
             b["is_valid_choice"] = len(b.get("queue", [])) < dynamic_limit
             
-    appointments = list(appts_col.find({}, {"_id": 0}))
+    appointments = list(appts_col.find(
+        {"status": {"$in": ["pending", "accepted"]}},
+        {"_id": 0}
+    ).sort([("date", 1), ("time", 1)]))
     services = list(services_col.find({}, {"_id": 0}))
     
     return {
@@ -309,8 +334,12 @@ def request_appointment(barber_id, date_str, time_str, service_name, customer_na
         if req_time_obj.time() < start_time_obj.time() or req_time_obj.time() > end_time_obj.time():
             return {"success": False, "message": "Booking hours are strictly between 09:00 AM and 09:00 PM."}
             
-        service_record = services_col.find_one({"name": service_name})
-        service_duration = service_record["mins"] if service_record else 30
+        service_docs = list(services_col.find({}, {"_id": 0, "name": 1, "mins": 1}))
+        service_durations = {
+            s.get("name"): int(s.get("mins", 30))
+            for s in service_docs if s.get("name")
+        }
+        service_duration = service_durations.get(service_name, 30)
         
         calc_end_time = req_time_obj + timedelta(minutes=service_duration)
         
@@ -320,7 +349,7 @@ def request_appointment(barber_id, date_str, time_str, service_name, customer_na
         return {"success": False, "message": "Invalid time format submitted."}
 
     barber_appts = list(appts_col.find({"barber_id": int(barber_id)}, {"_id": 0}))
-    if not is_time_available(barber_appts, time_str, date_str, service_name): 
+    if not is_time_available(barber_appts, time_str, date_str, service_name, service_durations): 
         return {"success": False, "message": "That time is already booked."}
         
     appts_col.insert_one({
