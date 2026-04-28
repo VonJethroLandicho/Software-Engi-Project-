@@ -4,6 +4,7 @@ let globalBarbers = [];
 let globalServices = []; 
 let expandedBreakdowns = { shop: false }; 
 let globalTimeOffset = 0; 
+let isFetchingState = false;
 
 const topBarStyle = document.createElement('style');
 topBarStyle.innerHTML = `
@@ -57,6 +58,9 @@ setInterval(updateClock, 1000);
 
 async function fetchState() {
     if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) { return; }
+    if (isFetchingState) return;
+
+    isFetchingState = true;
 
     try {
         const res = await fetch(`${API_BASE}/state`);
@@ -219,6 +223,7 @@ async function fetchState() {
         renderAppointments(data.appointments, data.barbers);
 
     } catch (e) { console.error("Backend offline", e); }
+    finally { isFetchingState = false; }
 }
 
 function renderQueue(queueContainerId, queueList, barberId, barberStatus) {
@@ -631,4 +636,4 @@ window.resetTimeOverride = async () => {
 };
 
 fetchState();
-setInterval(fetchState, 2000);
+setInterval(fetchState, 4000);

@@ -104,6 +104,29 @@
   </script>
 
   <script>
+    function showFeedback(message, type = 'error') {
+      const feedback = document.getElementById('loginFeedback');
+      if (!feedback) return;
+
+      feedback.textContent = message;
+      feedback.style.display = 'block';
+      feedback.style.padding = '10px 12px';
+      feedback.style.borderRadius = '8px';
+      feedback.style.marginBottom = '12px';
+      feedback.style.fontSize = '0.92rem';
+      feedback.style.fontWeight = '600';
+
+      if (type === 'success') {
+        feedback.style.color = '#14532d';
+        feedback.style.background = '#dcfce7';
+        feedback.style.border = '1px solid #86efac';
+      } else {
+        feedback.style.color = '#7f1d1d';
+        feedback.style.background = '#fee2e2';
+        feedback.style.border = '1px solid #fca5a5';
+      }
+    }
+
     async function handleSignIn() {
       const email    = document.getElementById('emailInput').value.trim();
       const password = document.getElementById('pwdInput').value;
@@ -129,7 +152,11 @@
           btn.style.background = '#1a6b3a';
           setTimeout(() => { window.location.href = '/admin'; }, 1000);
         } else {
-          showFeedback(data.detail || 'Access denied. Please check your credentials and try again.', 'error');
+          if (response.status === 403) {
+            showFeedback('Access denied: not an admin.', 'error');
+          } else {
+            showFeedback(data.detail || 'Access denied. Please check your credentials and try again.', 'error');
+          }
           resetButton(btn);
         }
       } catch (err) {

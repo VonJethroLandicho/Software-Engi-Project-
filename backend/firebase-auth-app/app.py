@@ -99,7 +99,7 @@ def staff_login():
         user = admin_auth.get_user(result["localId"])
         claims = user.custom_claims or {}
         if claims.get("role") != "staff":
-            return jsonify({"detail": "Access denied. Staff accounts only."}), 403
+            return jsonify({"detail": "Access denied: not an admin."}), 403
     except Exception as e:
         return jsonify({"detail": f"Role verification failed: {str(e)}"}), 500
 
@@ -154,7 +154,7 @@ def root():
 
 @app.get('/welcome')
 def welcome_page():
-    return send_file(os.path.join(FRONTEND_DIR, 'welcome.html'))
+    return send_file(os.path.join(FRONTEND_DIR, 'webpage/welcome.html'))
 
 @app.get('/staff-login')
 def staff_login_page():
